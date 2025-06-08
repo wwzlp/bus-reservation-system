@@ -703,10 +703,11 @@
 
         <div class="sidebar">
             <a class="nav-item active" onclick="showPage('dashboard')">数据概览</a>
-            <a class="nav-item" onclick="showPage('routes')">班车管理</a>
-            <a class="nav-item" onclick="showPage('reservations')">预约记录</a>
-            <a class="nav-item" onclick="showPage('users')">用户管理</a>
-            <a class="nav-item" onclick="showPage('appeals')">申诉审核</a>
+                <a class="nav-item" onclick="showPage('routes')">班车管理</a>
+                <a class="nav-item" onclick="showPage('reservations')">预约记录</a>
+                <a class="nav-item" onclick="showPage('users')">用户管理</a>
+                <a class="nav-item" onclick="showPage('violations')">违约记录</a>
+                <a class="nav-item" onclick="showPage('appeals')">申诉审核</a>
         </div>
         <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
@@ -809,6 +810,34 @@
                                     <th>状态</th>
                                     <th>注册时间</th>
                                     <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 违约记录页面 -->
+            <div id="violationsPage" class="hidden">
+                <h2 class="page-title">违约记录</h2>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="table-actions">
+                            <button class="btn btn-primary" onclick="checkViolations()">检查违约</button>
+                        </div>
+                        <table class="table" id="violationsTable">
+                            <thead>
+                                <tr>
+                                    <th>违约ID</th>
+                                    <th>用户姓名</th>
+                                    <th>学号</th>
+                                    <th>班车路线</th>
+                                    <th>预约日期</th>
+                                    <th>乘车码</th>
+                                    <th>违约类型</th>
+                                    <th>违约时间</th>
+                                    <th>描述</th>
                                 </tr>
                             </thead>
                             <tbody></tbody>
@@ -1062,6 +1091,9 @@
                     break;
                 case 'appeals':
                     loadAppeals();
+                    break;
+                case 'violations':
+                    loadViolations();
                     break;
             }
         }
@@ -1811,6 +1843,65 @@
                 }
             });
         });
+
+        // 加载违约记录
+        async function loadViolations() {
+            try {
+                const response = await fetch('/api/admin/violations', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const violations = await response.json();
+                
+                const tbody = document.querySelector('#violationsTable tbody');
+                tbody.innerHTML = violations.map(violation => {
+                    const violationTypeText = {
+                        'cancel': '取消预约',
+                        'no_show': '未确认上车'
+                    }[violation.violation_type];
+                    
+                    return `
+                        <tr>
+                            <td>${violation.id}</td>
+                            <td>${violation.real_name}</td>
+                            <td>${violation.student_id}</td>
+                            <td>${violation.route_name}</td>
+                            <td>${violation.reservation_date}</td>
+                            <td>${violation.boarding_code}</td>
+                            <td><span class="status-badge status-rejected">${violationTypeText}</span></td>
+                            <td>${new Date(violation.violation_date).toLocaleString()}</td>
+                            <td>${violation.description}</td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('加载违约记录失败:', error);
+            }
+        }
+
+        // 检查违约
+        async function checkViolations() {
+            try {
+                const response = await fetch('/api/admin/check-violations', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                if (response.ok) {
+                    alert(`检查完成， ${result.message}`);
+                    // alert(`检查完成，处理了 ${result.processed_count} 条违约记录`);
+                    loadViolations(); // 重新加载违约记录
+                } else {
+                    alert('检查失败: ' + result.error);
+                }
+            } catch (error) {
+                console.error('检查违约失败:', error);
+                alert('检查失败，请重试');
+            }
+        }
 
         // 退出登录
         function logout() {

@@ -88,6 +88,20 @@ def init_database():
         )
     ''')
     
+    # 创建违约记录表
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS violations (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            reservation_id INTEGER NOT NULL,
+            violation_type TEXT NOT NULL,
+            violation_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+            description TEXT,
+            FOREIGN KEY (user_id) REFERENCES users (id),
+            FOREIGN KEY (reservation_id) REFERENCES reservations (id)
+        )
+    ''')
+    
     # 创建申诉记录表
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS appeals (
@@ -109,16 +123,16 @@ def init_database():
         VALUES (?, ?, ?, ?, ?)
     ''', ('admin', admin_password.decode('utf-8'), '系统管理员', 'ADMIN001', 1))
     
-    # 插入默认班车路线
-    cursor.execute('''
-        INSERT OR IGNORE INTO bus_routes (name, departure_location, arrival_location, departure_time, capacity, days_of_week) 
-        VALUES (?, ?, ?, ?, ?, ?)
-    ''', ('班车A', '紫金港校区', '长兴试验基地', '07:50', 16, '1,3,5'))
+    # # 插入默认班车路线
+    # cursor.execute('''
+    #     INSERT OR IGNORE INTO bus_routes (name, departure_location, arrival_location, departure_time, capacity, days_of_week) 
+    #     VALUES (?, ?, ?, ?, ?, ?)
+    # ''', ('班车A', '紫金港校区', '长兴试验基地', '07:50', 16, '1,3,5'))
     
-    cursor.execute('''
-        INSERT OR IGNORE INTO bus_routes (name, departure_location, arrival_location, departure_time, capacity, days_of_week) 
-        VALUES (?, ?, ?, ?, ?, ?)
-    ''', ('班车B', '紫金港校区', '余杭试验基地', '07:50', 14, '2,4'))
+    # cursor.execute('''
+    #     INSERT OR IGNORE INTO bus_routes (name, departure_location, arrival_location, departure_time, capacity, days_of_week) 
+    #     VALUES (?, ?, ?, ?, ?, ?)
+    # ''', ('班车B', '紫金港校区', '余杭试验基地', '07:50', 14, '2,4'))
     
     conn.commit()
     conn.close()
@@ -403,6 +417,12 @@ def cancel_reservation(reservation_id):
     cursor.execute('UPDATE reservations SET status = "cancelled" WHERE id = ?', (reservation_id,))
     cursor.execute('UPDATE users SET cancel_count = cancel_count + 1 WHERE id = ?', (user_id,))
     
+    # 添加违约记录
+    cursor.execute('''
+        INSERT INTO violations (user_id, reservation_id, violation_type, description)
+        VALUES (?, ?, ?, ?)
+    ''', (user_id, reservation_id, 'cancel', '用户主动取消预约'))
+    
     # 检查取消次数是否达到6次
     user = conn.execute('SELECT cancel_count FROM users WHERE id = ?', (user_id,)).fetchone()
     
@@ -423,15 +443,41 @@ def confirm_boarding(reservation_id):
     user_id = get_jwt_identity()
     
     conn = get_db_connection()
+    
+    # 获取预约信息和班车时间
+    reservation = conn.execute('''
+        SELECT r.*, br.departure_time
+        FROM reservations r
+        JOIN bus_routes br ON r.route_id = br.id
+        WHERE r.id = ? AND r.user_id = ? AND r.status = "active"
+    ''', (reservation_id, user_id)).fetchone()
+    
+    if not reservation:
+        conn.close()
+        return jsonify({'error': '预约记录不存在或已处理'}), 404
+    
+    # 检查是否在发车前半小时内
+    try:
+        reservation_datetime = datetime.datetime.strptime(f"{reservation['reservation_date']} {reservation['departure_time']}", '%Y-%m-%d %H:%M')
+        now = datetime.datetime.now()
+        minutes_until_departure = (reservation_datetime - now).total_seconds() / 60
+        
+        if minutes_until_departure > 30:
+            conn.close()
+            return jsonify({'error': '只能在发车前30分钟内确认上车'}), 400
+        
+        if minutes_until_departure < -30:
+            conn.close()
+            return jsonify({'error': '发车后30分钟内未确认，已视为违约'}), 400
+    except ValueError:
+        conn.close()
+        return jsonify({'error': '时间格式错误'}), 500
+    
     cursor = conn.cursor()
     cursor.execute('''
         UPDATE reservations SET is_confirmed = 1 
         WHERE id = ? AND user_id = ? AND status = "active"
     ''', (reservation_id, user_id))
-    
-    if cursor.rowcount == 0:
-        conn.close()
-        return jsonify({'error': '预约记录不存在或已处理'}), 404
     
     conn.commit()
     conn.close()
@@ -743,6 +789,101 @@ def admin_batch_ban_users():
         conn.rollback()
         conn.close()
         return jsonify({'error': '操作失败，请重试'}), 500
+
+# 获取违约记录
+@app.route('/api/admin/violations', methods=['GET'])
+@jwt_required()
+def get_violations():
+    user_id = get_jwt_identity()
+    
+    # 检查管理员权限
+    conn = get_db_connection()
+    admin = conn.execute('SELECT is_admin FROM users WHERE id = ?', (user_id,)).fetchone()
+    
+    if not admin or not admin['is_admin']:
+        conn.close()
+        return jsonify({'error': '权限不足'}), 403
+    
+    violations = conn.execute('''
+        SELECT v.*, u.username, u.real_name, u.student_id,
+               r.reservation_date, r.boarding_code,
+               br.name as route_name, br.departure_location, br.arrival_location, br.departure_time
+        FROM violations v
+        JOIN users u ON v.user_id = u.id
+        JOIN reservations r ON v.reservation_id = r.id
+        JOIN bus_routes br ON r.route_id = br.id
+        ORDER BY v.violation_date DESC
+    ''').fetchall()
+    
+    conn.close()
+    
+    return jsonify([dict(row) for row in violations])
+
+# 检查并处理未确认上车的违约
+@app.route('/api/admin/check-violations', methods=['POST'])
+@jwt_required()
+def check_violations():
+    user_id = get_jwt_identity()
+    
+    # 检查管理员权限
+    conn = get_db_connection()
+    admin = conn.execute('SELECT is_admin FROM users WHERE id = ?', (user_id,)).fetchone()
+    
+    if not admin or not admin['is_admin']:
+        conn.close()
+        return jsonify({'error': '权限不足'}), 403
+    
+    # 查找发车后30分钟仍未确认的预约
+    now = datetime.datetime.now()
+    cursor = conn.cursor()
+    
+    unconfirmed_reservations = conn.execute('''
+        SELECT r.*, br.departure_time
+        FROM reservations r
+        JOIN bus_routes br ON r.route_id = br.id
+        WHERE r.status = "active" AND r.is_confirmed = 0
+    ''').fetchall()
+    
+    violation_count = 0
+    
+    for reservation in unconfirmed_reservations:
+        try:
+            reservation_datetime = datetime.datetime.strptime(f"{reservation['reservation_date']} {reservation['departure_time']}", '%Y-%m-%d %H:%M')
+            minutes_since_departure = (now - reservation_datetime).total_seconds() / 60
+            
+            if minutes_since_departure > 30:
+                # 检查是否已经记录过违约
+                existing_violation = conn.execute('''
+                    SELECT id FROM violations 
+                    WHERE reservation_id = ? AND violation_type = "no_confirm"
+                ''', (reservation['id'],)).fetchone()
+                
+                if not existing_violation:
+                    # 添加违约记录
+                    cursor.execute('''
+                        INSERT INTO violations (user_id, reservation_id, violation_type, description)
+                        VALUES (?, ?, ?, ?)
+                    ''', (reservation['user_id'], reservation['id'], 'no_confirm', '发车后30分钟内未确认上车'))
+                    
+                    # 增加用户违约次数
+                    cursor.execute('UPDATE users SET violation_count = violation_count + 1 WHERE id = ?', (reservation['user_id'],))
+                    
+                    # 检查违约次数是否达到3次
+                    user = conn.execute('SELECT violation_count FROM users WHERE id = ?', (reservation['user_id'],)).fetchone()
+                    if user['violation_count'] >= 3:
+                        cursor.execute('UPDATE users SET is_banned = 1 WHERE id = ?', (reservation['user_id'],))
+                    
+                    # 将预约状态改为已完成
+                    cursor.execute('UPDATE reservations SET status = "completed" WHERE id = ?', (reservation['id'],))
+                    
+                    violation_count += 1
+        except ValueError:
+            continue
+    
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'message': f'已处理 {violation_count} 条违约记录'})
 
 if __name__ == '__main__':
     # 初始化数据库

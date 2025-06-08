@@ -1,0 +1,1825 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>班车预约系统 - 管理后台</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        .container {
+            width: 100%;
+            margin: 0;
+            background: white;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logout-btn {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+        }
+
+        .sidebar {
+            width: 250px;
+            background: #f8f9fa;
+            border-right: 1px solid #dee2e6;
+            position: fixed;
+            height: calc(100vh - 80px);
+            overflow-y: auto;
+        }
+
+        .nav-item {
+            display: block;
+            padding: 15px 20px;
+            color: #495057;
+            text-decoration: none;
+            border-bottom: 1px solid #dee2e6;
+            cursor: pointer;
+        }
+
+        .nav-item:hover, .nav-item.active {
+            background: #e9ecef;
+            color: #667eea;
+        }
+
+        .main-content {
+            margin-left: 250px;
+            padding: 30px;
+        }
+
+        .page-title {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 30px;
+            color: #333;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .card-header {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .batch-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .batch-actions .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-success {
+            background: #52c41a;
+            color: white;
+        }
+
+        .btn-danger {
+            background: #ff4d4f;
+            color: white;
+        }
+
+        .btn-warning {
+            background: #fa8c16;
+            color: white;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .table th,
+        .table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+        }
+
+        .form-row {
+            display: flex;
+            gap: 20px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+            text-align: center;
+            min-width: 60px;
+            white-space: nowrap;
+            line-height: 1.2;
+        }
+
+        .status-active {
+            background: #e6f7ff;
+            color: #1890ff;
+        }
+
+        .status-cancelled {
+            background: #fff2e8;
+            color: #fa8c16;
+        }
+
+        .status-completed {
+            background: #f6ffed;
+            color: #52c41a;
+        }
+
+        .status-pending {
+            background: #fff7e6;
+            color: #fa8c16;
+        }
+
+        .status-approved {
+            background: #f6ffed;
+            color: #52c41a;
+        }
+
+        .status-rejected {
+            background: #fff2f0;
+            color: #ff4d4f;
+        }
+
+        .status-banned {
+            background: #fff2f0;
+            color: #ff4d4f;
+        }
+
+        .status-admin {
+            background: #e6f7ff;
+            color: #1890ff;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 0;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .close {
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #aaa;
+        }
+
+        .close:hover {
+            color: #000;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .modal-footer {
+            padding: 20px;
+            border-top: 1px solid #eee;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .alert {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: #f6ffed;
+            color: #52c41a;
+            border: 1px solid #b7eb8f;
+        }
+
+        .alert-error {
+            background: #fff2f0;
+            color: #ff4d4f;
+            border: 1px solid #ffccc7;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .login-form {
+            max-width: 400px;
+            margin: 100px auto;
+            padding: 40px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .checkbox-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            margin: 0;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 200px;
+            }
+            
+            .main-content {
+                margin-left: 200px;
+                padding: 20px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .header {
+                padding: 15px;
+                flex-direction: row;
+                gap: 10px;
+                position: relative;
+            }
+            
+            .header h1 {
+                font-size: 20px;
+                flex: 1;
+                text-align: center;
+            }
+            
+            .menu-toggle {
+                display: block !important;
+                position: absolute;
+                left: 15px;
+                top: 50%;
+                transform: translateY(-50%);
+                background: rgba(255,255,255,0.2);
+                border: 1px solid rgba(255,255,255,0.3);
+                color: white;
+                padding: 8px 12px;
+                border-radius: 6px;
+                font-size: 16px;
+                cursor: pointer;
+            }
+            
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: -100%;
+                width: 250px;
+                height: 100vh;
+                transition: left 0.3s ease;
+                z-index: 999;
+                background: #f8f9fa;
+                border-right: 1px solid #dee2e6;
+                display: block;
+                overflow-y: auto;
+                padding-top: 60px;
+            }
+            
+            .sidebar.show {
+                left: 0;
+            }
+            
+            .nav-item {
+                display: block;
+                min-width: auto;
+                text-align: left;
+                border-right: none;
+                border-bottom: 1px solid #dee2e6;
+                padding: 15px 20px;
+            }
+            
+            .main-content {
+                margin-left: 0;
+                padding: 15px;
+            }
+            
+            .page-title {
+                font-size: 24px;
+                margin-bottom: 20px;
+            }
+            
+            .card-header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+            
+            .batch-actions {
+                flex-wrap: wrap;
+                width: 100%;
+            }
+            
+            .batch-actions .btn {
+                flex: 1;
+                min-width: 80px;
+            }
+            
+            .card-body {
+                overflow-x: auto;
+            }
+            
+            .table {
+                font-size: 12px;
+                min-width: 800px;
+            }
+            
+            .table th,
+            .table td {
+                padding: 8px 4px;
+                white-space: nowrap;
+            }
+            
+            .status-badge {
+                padding: 4px 8px;
+                font-size: 11px;
+                min-width: 50px;
+                border-radius: 12px;
+            }
+            
+            .btn {
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+            
+            .form-row {
+                flex-direction: column;
+                gap: 0;
+            }
+            
+            .modal-content {
+                width: 95%;
+                margin: 2% auto;
+                max-height: 95vh;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .login-form {
+                margin: 50px auto;
+                padding: 30px 20px;
+                max-width: 90%;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .header {
+                padding: 10px;
+            }
+            
+            .header h1 {
+                font-size: 18px;
+            }
+            
+            .main-content {
+                padding: 10px;
+            }
+            
+            .page-title {
+                font-size: 20px;
+                margin-bottom: 15px;
+            }
+            
+            .card {
+                margin-bottom: 20px;
+            }
+            
+            .card-header,
+            .card-body {
+                padding: 15px;
+            }
+            
+            .table {
+                font-size: 11px;
+            }
+            
+            .table th,
+            .table td {
+                padding: 6px 2px;
+            }
+            
+            .status-badge {
+                padding: 3px 6px;
+                font-size: 10px;
+                min-width: 40px;
+                border-radius: 10px;
+            }
+            
+            .btn {
+                padding: 6px 10px;
+                font-size: 11px;
+            }
+            
+            .batch-actions .btn {
+                min-width: 70px;
+            }
+            
+            .modal-content {
+                width: 98%;
+                margin: 1% auto;
+            }
+            
+            .modal-header,
+            .modal-body,
+            .modal-footer {
+                padding: 15px;
+            }
+            
+            .form-control {
+                padding: 8px;
+                font-size: 14px;
+            }
+            
+            .login-form {
+                margin: 20px auto;
+                padding: 20px 15px;
+            }
+            
+            .stat-number {
+                font-size: 24px;
+            }
+            
+            .user-info {
+                flex-direction: column;
+                gap: 8px;
+                align-items: center;
+            }
+        }
+        
+        /* 遮罩层 */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 998;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar.show + .sidebar-overlay {
+                display: block;
+            }
+        }
+        
+        /* 大屏幕优化 */
+        @media (min-width: 1400px) {
+            .sidebar {
+                width: 280px;
+            }
+            
+            .main-content {
+                margin-left: 280px;
+                padding: 40px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 登录表单 -->
+    <div id="loginForm" class="login-form">
+        <h2 style="text-align: center; margin-bottom: 30px; color: #667eea;">管理员登录</h2>
+        <div id="loginAlert"></div>
+        <form id="loginFormElement">
+            <div class="form-group">
+                <label for="username">用户名</label>
+                <input type="text" id="username" name="username" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label for="password">密码</label>
+                <input type="password" id="password" name="password" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">登录</button>
+        </form>
+    </div>
+
+    <!-- 主应用 -->
+    <div id="mainApp" class="container hidden">
+        <div class="header">
+            <button class="menu-toggle" onclick="toggleSidebar()" style="display: none;">☰</button>
+            <h1>班车预约系统 - 管理后台</h1>
+            <div class="user-info">
+                <span id="userWelcome"></span>
+                <button class="logout-btn" onclick="logout()">退出</button>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <a class="nav-item active" onclick="showPage('dashboard')">数据概览</a>
+            <a class="nav-item" onclick="showPage('routes')">班车管理</a>
+            <a class="nav-item" onclick="showPage('reservations')">预约记录</a>
+            <a class="nav-item" onclick="showPage('users')">用户管理</a>
+            <a class="nav-item" onclick="showPage('appeals')">申诉审核</a>
+        </div>
+        <div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+        <div class="main-content">
+            <!-- 数据概览页面 -->
+            <div id="dashboardPage">
+                <h2 class="page-title">数据概览</h2>
+                <div class="stats-grid" id="statsGrid">
+                    <!-- 统计数据将在这里动态加载 -->
+                </div>
+            </div>
+
+            <!-- 班车管理页面 -->
+            <div id="routesPage" class="hidden">
+                <h2 class="page-title">班车管理</h2>
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">班车路线</h3>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <div class="batch-actions">
+                                <button class="btn btn-warning" onclick="batchUpdateRouteStatus(false)" id="batchDisableBtn" disabled>批量禁用</button>
+                                <button class="btn btn-success" onclick="batchUpdateRouteStatus(true)" id="batchEnableBtn" disabled>批量启用</button>
+                                <button class="btn btn-danger" onclick="batchDeleteRoutes()" id="batchDeleteRoutesBtn" disabled>批量删除</button>
+                            </div>
+                            <button class="btn btn-primary" onclick="showAddRouteModal()">添加新路线</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <table class="table" id="routesTable">
+                            <thead>
+                                <tr>
+                                    <th><input type="checkbox" id="selectAllRoutes" onchange="toggleSelectAllRoutes()"></th>
+                                    <th>路线名称</th>
+                                    <th>出发地</th>
+                                    <th>目的地</th>
+                                    <th>出发时间</th>
+                                    <th>座位数</th>
+                                    <th>运行日期</th>
+                                    <th>状态</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 预约记录页面 -->
+            <div id="reservationsPage" class="hidden">
+                <h2 class="page-title">预约记录</h2>
+                <div class="card">
+                    <div class="card-body">
+                        <table class="table" id="reservationsTable">
+                            <thead>
+                                <tr>
+                                    <th>预约ID</th>
+                                    <th>用户姓名</th>
+                                    <th>学号</th>
+                                    <th>班车路线</th>
+                                    <th>预约日期</th>
+                                    <th>行程类型</th>
+                                    <th>座位数</th>
+                                    <th>乘车码</th>
+                                    <th>状态</th>
+                                    <th>确认上车</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 用户管理页面 -->
+            <div id="usersPage" class="hidden">
+                <h2 class="page-title">用户管理</h2>
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">用户列表</h3>
+                        <div class="batch-actions">
+                            <button class="btn btn-warning" onclick="batchBanUsers(true)" id="batchBanBtn" disabled>批量禁用</button>
+                            <button class="btn btn-success" onclick="batchBanUsers(false)" id="batchUnbanBtn" disabled>批量启用</button>
+                            <button class="btn btn-danger" onclick="batchDeleteUsers()" id="batchDeleteBtn" disabled>批量删除</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <table class="table" id="usersTable">
+                            <thead>
+                                <tr>
+                                    <th><input type="checkbox" id="selectAllUsers" onchange="toggleSelectAll()"></th>
+                                    <th>ID</th>
+                                    <th>用户名</th>
+                                    <th>真实姓名</th>
+                                    <th>学号</th>
+                                    <th>邮箱</th>
+                                    <th>电话</th>
+                                    <th>违约次数</th>
+                                    <th>取消次数</th>
+                                    <th>状态</th>
+                                    <th>注册时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 申诉审核页面 -->
+            <div id="appealsPage" class="hidden">
+                <h2 class="page-title">申诉审核</h2>
+                <div class="card">
+                    <div class="card-body">
+                        <table class="table" id="appealsTable">
+                            <thead>
+                                <tr>
+                                    <th>申诉ID</th>
+                                    <th>用户姓名</th>
+                                    <th>学号</th>
+                                    <th>申诉理由</th>
+                                    <th>提交时间</th>
+                                    <th>状态</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加/编辑路线模态框 -->
+    <div id="routeModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="routeModalTitle">添加班车路线</h3>
+                <span class="close" onclick="closeModal('routeModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="routeForm">
+                    <input type="hidden" id="routeId">
+                    <div class="form-group">
+                        <label for="routeName">路线名称</label>
+                        <input type="text" id="routeName" class="form-control" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="departureLocation">出发地</label>
+                            <input type="text" id="departureLocation" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="arrivalLocation">目的地</label>
+                            <input type="text" id="arrivalLocation" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="departureTime">出发时间</label>
+                            <input type="time" id="departureTime" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="capacity">座位数</label>
+                            <input type="number" id="capacity" class="form-control" min="1" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>运行日期</label>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="day1" value="1">
+                                <label for="day1">周一</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="day2" value="2">
+                                <label for="day2">周二</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="day3" value="3">
+                                <label for="day3">周三</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="day4" value="4">
+                                <label for="day4">周四</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="day5" value="5">
+                                <label for="day5">周五</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="day6" value="6">
+                                <label for="day6">周六</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" id="day0" value="0">
+                                <label for="day0">周日</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="isActive" checked>
+                            启用此路线
+                        </label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('routeModal')">取消</button>
+                <button class="btn btn-primary" onclick="saveRoute()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 申诉处理模态框 -->
+    <div id="appealModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">处理申诉</h3>
+                <span class="close" onclick="closeModal('appealModal')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="appealDetails"></div>
+                <div class="form-group">
+                    <label for="adminResponse">管理员回复</label>
+                    <textarea id="adminResponse" class="form-control" rows="4" placeholder="请输入处理意见..."></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('appealModal')">取消</button>
+                <button class="btn btn-danger" onclick="processAppeal('rejected')">拒绝</button>
+                <button class="btn btn-success" onclick="processAppeal('approved')">通过</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let token = localStorage.getItem('adminToken');
+        let currentAppealId = null;
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            if (token) {
+                checkTokenAndLoadApp();
+            }
+        });
+
+        // 检查token并加载应用
+        async function checkTokenAndLoadApp() {
+            try {
+                const response = await fetch('/api/admin/routes', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    showMainApp();
+                    loadDashboard();
+                } else {
+                    localStorage.removeItem('adminToken');
+                    token = null;
+                }
+            } catch (error) {
+                localStorage.removeItem('adminToken');
+                token = null;
+            }
+        }
+
+        // 显示主应用
+        function showMainApp() {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            
+            // 解析token获取用户信息
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            document.getElementById('userWelcome').textContent = `欢迎，${payload.username}`;
+        }
+
+        // 登录
+        document.getElementById('loginFormElement').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok && result.user.is_admin) {
+                    token = result.token;
+                    localStorage.setItem('adminToken', token);
+                    showAlert('loginAlert', '登录成功', 'success');
+                    setTimeout(() => {
+                        showMainApp();
+                        loadDashboard();
+                    }, 1000);
+                } else if (response.ok && !result.user.is_admin) {
+                    showAlert('loginAlert', '您没有管理员权限', 'error');
+                } else {
+                    showAlert('loginAlert', result.error, 'error');
+                }
+            } catch (error) {
+                showAlert('loginAlert', '登录失败，请重试', 'error');
+            }
+        });
+
+        // 显示提示信息
+        function showAlert(containerId, message, type) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 5000);
+        }
+
+        // 显示页面
+        function showPage(pageName) {
+            // 更新导航状态
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            // 隐藏所有页面
+            document.querySelectorAll('[id$="Page"]').forEach(page => page.classList.add('hidden'));
+            
+            // 显示目标页面
+            document.getElementById(pageName + 'Page').classList.remove('hidden');
+            
+            // 加载对应数据
+            switch(pageName) {
+                case 'dashboard':
+                    loadDashboard();
+                    break;
+                case 'routes':
+                    loadRoutes();
+                    break;
+                case 'reservations':
+                    loadReservations();
+                    break;
+                case 'users':
+                    loadUsers();
+                    break;
+                case 'appeals':
+                    loadAppeals();
+                    break;
+            }
+        }
+
+        // 加载数据概览
+        async function loadDashboard() {
+            try {
+                const [routesRes, reservationsRes, appealsRes] = await Promise.all([
+                    fetch('/api/admin/routes', { headers: { 'Authorization': `Bearer ${token}` } }),
+                    fetch('/api/admin/reservations', { headers: { 'Authorization': `Bearer ${token}` } }),
+                    fetch('/api/admin/appeals', { headers: { 'Authorization': `Bearer ${token}` } })
+                ]);
+                
+                const routes = await routesRes.json();
+                const reservations = await reservationsRes.json();
+                const appeals = await appealsRes.json();
+                
+                const activeRoutes = routes.filter(r => r.is_active).length;
+                const todayReservations = reservations.filter(r => r.reservation_date === new Date().toISOString().split('T')[0]).length;
+                const pendingAppeals = appeals.filter(a => a.status === 'pending').length;
+                const totalUsers = new Set(reservations.map(r => r.user_id)).size;
+                
+                document.getElementById('statsGrid').innerHTML = `
+                    <div class="stat-card">
+                        <div class="stat-number">${activeRoutes}</div>
+                        <div class="stat-label">活跃班车路线</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${todayReservations}</div>
+                        <div class="stat-label">今日预约</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${pendingAppeals}</div>
+                        <div class="stat-label">待处理申诉</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${totalUsers}</div>
+                        <div class="stat-label">总用户数</div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('加载数据概览失败:', error);
+            }
+        }
+
+        // 加载班车路线
+        async function loadRoutes() {
+            try {
+                const response = await fetch('/api/admin/routes', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const routes = await response.json();
+                
+                const tbody = document.querySelector('#routesTable tbody');
+                tbody.innerHTML = routes.map(route => {
+                    const days = route.days_of_week.split(',').map(d => {
+                        const dayNames = ['日', '一', '二', '三', '四', '五', '六'];
+                        return '周' + dayNames[parseInt(d)];
+                    }).join(', ');
+                    
+                    return `
+                        <tr>
+                            <td><input type="checkbox" class="route-checkbox" value="${route.id}" onchange="updateRouteBatchButtons()"></td>
+                            <td>${route.name}</td>
+                            <td>${route.departure_location}</td>
+                            <td>${route.arrival_location}</td>
+                            <td>${route.departure_time}</td>
+                            <td>${route.capacity}</td>
+                            <td>${days}</td>
+                            <td><span class="status-badge ${route.is_active ? 'status-active' : 'status-cancelled'}">${route.is_active ? '启用' : '禁用'}</span></td>
+                            <td>
+                                <button class="btn btn-primary" onclick="editRoute(${route.id})">编辑</button>
+                                <button class="btn btn-sm ${route.is_active ? 'btn-warning' : 'btn-success'}" onclick="toggleRouteStatus(${route.id}, ${!route.is_active})">
+                                    ${route.is_active ? '禁用' : '启用'}
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteRoute(${route.id})">删除</button>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+                
+                // 重置选择状态
+                updateRouteBatchButtons();
+            } catch (error) {
+                console.error('加载班车路线失败:', error);
+            }
+        }
+
+        // 加载预约记录
+        async function loadReservations() {
+            try {
+                const response = await fetch('/api/admin/reservations', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const reservations = await response.json();
+                
+                const tbody = document.querySelector('#reservationsTable tbody');
+                tbody.innerHTML = reservations.map(reservation => {
+                    const statusClass = {
+                        'active': 'status-active',
+                        'cancelled': 'status-cancelled',
+                        'completed': 'status-completed'
+                    }[reservation.status] || 'status-active';
+                    
+                    const statusText = {
+                        'active': '有效',
+                        'cancelled': '已取消',
+                        'completed': '已完成'
+                    }[reservation.status] || '有效';
+                    
+                    const tripTypeText = {
+                        'outbound': '去程',
+                        'return': '回程',
+                        'round_trip': '往返'
+                    }[reservation.trip_type];
+                    
+                    return `
+                        <tr>
+                            <td>${reservation.id}</td>
+                            <td>${reservation.real_name}</td>
+                            <td>${reservation.student_id}</td>
+                            <td>${reservation.route_name}</td>
+                            <td>${reservation.reservation_date}</td>
+                            <td>${tripTypeText}</td>
+                            <td>${reservation.seat_count}</td>
+                            <td>${reservation.boarding_code || '-'}</td>
+                            <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                            <td>${reservation.is_confirmed ? '已确认' : '未确认'}</td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('加载预约记录失败:', error);
+            }
+        }
+
+        // 加载用户列表
+        async function loadUsers() {
+            try {
+                const response = await fetch('/api/admin/users', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const users = await response.json();
+                
+                const tbody = document.querySelector('#usersTable tbody');
+                tbody.innerHTML = users.map(user => {
+                    const statusClass = user.is_banned ? 'status-banned' : (user.is_admin ? 'status-admin' : 'status-active');
+                    const statusText = user.is_banned ? '已禁用' : (user.is_admin ? '管理员' : '正常');
+                    
+                    return `
+                        <tr>
+                            <td>
+                                ${!user.is_admin ? `<input type="checkbox" class="user-checkbox" value="${user.id}" onchange="updateBatchButtons()">` : ''}
+                            </td>
+                            <td>${user.id}</td>
+                            <td>${user.username}</td>
+                            <td>${user.real_name}</td>
+                            <td>${user.student_id}</td>
+                            <td>${user.email || '-'}</td>
+                            <td>${user.phone || '-'}</td>
+                            <td>${user.violation_count}</td>
+                            <td>${user.cancel_count}</td>
+                            <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                            <td>${new Date(user.created_at).toLocaleString()}</td>
+                            <td>
+                                ${!user.is_admin ? `
+                                    <button class="btn btn-sm ${user.is_banned ? 'btn-success' : 'btn-warning'}" 
+                                            onclick="toggleUserBan(${user.id}, ${!user.is_banned})">
+                                        ${user.is_banned ? '启用' : '禁用'}
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" onclick="deleteUser(${user.id})">删除</button>
+                                ` : '系统管理员'}
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+                
+                // 重置选择状态
+                updateBatchButtons();
+            } catch (error) {
+                console.error('加载用户列表失败:', error);
+            }
+        }
+
+        // 更新批量操作按钮状态
+        function updateBatchButtons() {
+            const checkboxes = document.querySelectorAll('.user-checkbox:checked');
+            const batchButtons = document.querySelectorAll('.batch-actions .btn');
+            
+            batchButtons.forEach(btn => {
+                btn.disabled = checkboxes.length === 0;
+            });
+        }
+
+        // 全选/取消全选
+        function toggleSelectAll() {
+            const selectAllCheckbox = document.getElementById('selectAllUsers');
+            const userCheckboxes = document.querySelectorAll('.user-checkbox');
+            
+            userCheckboxes.forEach(checkbox => {
+                checkbox.checked = selectAllCheckbox.checked;
+            });
+            
+            updateBatchButtons();
+        }
+
+        // 批量禁用/启用用户
+        async function batchBanUsers(ban) {
+            const selectedUsers = Array.from(document.querySelectorAll('.user-checkbox:checked')).map(cb => parseInt(cb.value));
+            
+            if (selectedUsers.length === 0) {
+                alert('请选择要操作的用户');
+                return;
+            }
+            
+            const action = ban ? '禁用' : '启用';
+            if (!confirm(`确定要${action}选中的 ${selectedUsers.length} 个用户吗？`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/admin/users/batch-ban', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        user_ids: selectedUsers,
+                        ban: ban
+                    })
+                });
+                
+                if (response.ok) {
+                    alert(`批量${action}成功`);
+                    loadUsers();
+                } else {
+                    const error = await response.json();
+                    alert(`批量${action}失败: ` + error.error);
+                }
+            } catch (error) {
+                console.error(`批量${action}失败:`, error);
+                alert(`批量${action}失败`);
+            }
+        }
+
+        // 批量删除用户
+        async function batchDeleteUsers() {
+            const selectedUsers = Array.from(document.querySelectorAll('.user-checkbox:checked')).map(cb => parseInt(cb.value));
+            
+            if (selectedUsers.length === 0) {
+                alert('请选择要删除的用户');
+                return;
+            }
+            
+            if (!confirm(`确定要删除选中的 ${selectedUsers.length} 个用户吗？此操作不可恢复！`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/admin/users/batch-delete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        user_ids: selectedUsers
+                    })
+                });
+                
+                if (response.ok) {
+                    alert('批量删除成功');
+                    loadUsers();
+                } else {
+                    const error = await response.json();
+                    alert('批量删除失败: ' + error.error);
+                }
+            } catch (error) {
+                console.error('批量删除失败:', error);
+                alert('批量删除失败');
+            }
+        }
+
+        // 单个用户禁用/启用
+        async function toggleUserBan(userId, ban) {
+            const action = ban ? '禁用' : '启用';
+            
+            if (!confirm(`确定要${action}该用户吗？`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/admin/users/batch-ban', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        user_ids: [userId],
+                        ban: ban
+                    })
+                });
+                
+                if (response.ok) {
+                    alert(`${action}成功`);
+                    loadUsers();
+                } else {
+                    const error = await response.json();
+                    alert(`${action}失败: ` + error.error);
+                }
+            } catch (error) {
+                console.error(`${action}失败:`, error);
+                alert(`${action}失败`);
+            }
+        }
+
+        // 单个用户删除
+        async function deleteUser(userId) {
+            if (!confirm('确定要删除该用户吗？此操作不可恢复！')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/admin/users/batch-delete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        user_ids: [userId]
+                    })
+                });
+                
+                if (response.ok) {
+                    alert('删除成功');
+                    loadUsers();
+                } else {
+                    const error = await response.json();
+                    alert('删除失败: ' + error.error);
+                }
+            } catch (error) {
+                console.error('删除失败:', error);
+                alert('删除失败');
+            }
+        }
+
+        // 更新班车路线批量操作按钮状态
+        function updateRouteBatchButtons() {
+            const checkboxes = document.querySelectorAll('.route-checkbox:checked');
+            const batchButtons = document.querySelectorAll('#batchDisableBtn, #batchEnableBtn, #batchDeleteRoutesBtn');
+            
+            batchButtons.forEach(btn => {
+                btn.disabled = checkboxes.length === 0;
+            });
+        }
+
+        // 全选/取消全选班车路线
+        function toggleSelectAllRoutes() {
+            const selectAllCheckbox = document.getElementById('selectAllRoutes');
+            const routeCheckboxes = document.querySelectorAll('.route-checkbox');
+            
+            routeCheckboxes.forEach(checkbox => {
+                checkbox.checked = selectAllCheckbox.checked;
+            });
+            
+            updateRouteBatchButtons();
+        }
+
+        // 批量更新班车路线状态
+        async function batchUpdateRouteStatus(isActive) {
+            const selectedRoutes = Array.from(document.querySelectorAll('.route-checkbox:checked')).map(cb => parseInt(cb.value));
+            
+            if (selectedRoutes.length === 0) {
+                alert('请选择要操作的路线');
+                return;
+            }
+            
+            const action = isActive ? '启用' : '禁用';
+            if (!confirm(`确定要${action}选中的 ${selectedRoutes.length} 条路线吗？`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/admin/routes/batch-status', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        route_ids: selectedRoutes,
+                        is_active: isActive
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    alert(result.message);
+                    loadRoutes();
+                } else {
+                    const error = await response.json();
+                    alert(`批量${action}失败: ` + error.error);
+                }
+            } catch (error) {
+                console.error(`批量${action}失败:`, error);
+                alert(`批量${action}失败`);
+            }
+        }
+
+        // 批量删除班车路线
+        async function batchDeleteRoutes() {
+            const selectedRoutes = Array.from(document.querySelectorAll('.route-checkbox:checked')).map(cb => parseInt(cb.value));
+            
+            if (selectedRoutes.length === 0) {
+                alert('请选择要删除的路线');
+                return;
+            }
+            
+            if (!confirm(`确定要删除选中的 ${selectedRoutes.length} 条路线吗？此操作不可恢复！`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/admin/routes/batch-delete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        route_ids: selectedRoutes
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    alert(result.message);
+                    loadRoutes();
+                } else {
+                    const error = await response.json();
+                    alert('批量删除失败: ' + error.error);
+                }
+            } catch (error) {
+                console.error('批量删除失败:', error);
+                alert('批量删除失败');
+            }
+        }
+
+        // 单个路线状态切换
+        async function toggleRouteStatus(routeId, isActive) {
+            const action = isActive ? '启用' : '禁用';
+            
+            if (!confirm(`确定要${action}该路线吗？`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/admin/routes/batch-status', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        route_ids: [routeId],
+                        is_active: isActive
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    alert(result.message);
+                    loadRoutes();
+                } else {
+                    const error = await response.json();
+                    alert(`${action}失败: ` + error.error);
+                }
+            } catch (error) {
+                console.error(`${action}失败:`, error);
+                alert(`${action}失败`);
+            }
+        }
+
+        // 单个路线删除
+        async function deleteRoute(routeId) {
+            if (!confirm('确定要删除该路线吗？此操作不可恢复！')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/admin/routes/batch-delete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        route_ids: [routeId]
+                    })
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    alert(result.message);
+                    loadRoutes();
+                } else {
+                    const error = await response.json();
+                    alert('删除失败: ' + error.error);
+                }
+            } catch (error) {
+                console.error('删除失败:', error);
+                alert('删除失败');
+            }
+        }
+
+        // 加载申诉记录
+        async function loadAppeals() {
+            try {
+                const response = await fetch('/api/admin/appeals', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const appeals = await response.json();
+                
+                const tbody = document.querySelector('#appealsTable tbody');
+                tbody.innerHTML = appeals.map(appeal => {
+                    const statusClass = {
+                        'pending': 'status-pending',
+                        'approved': 'status-approved',
+                        'rejected': 'status-rejected'
+                    }[appeal.status];
+                    
+                    const statusText = {
+                        'pending': '待处理',
+                        'approved': '已通过',
+                        'rejected': '已拒绝'
+                    }[appeal.status];
+                    
+                    return `
+                        <tr>
+                            <td>${appeal.id}</td>
+                            <td>${appeal.real_name}</td>
+                            <td>${appeal.student_id}</td>
+                            <td>${appeal.reason.substring(0, 50)}${appeal.reason.length > 50 ? '...' : ''}</td>
+                            <td>${new Date(appeal.created_at).toLocaleString()}</td>
+                            <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+                            <td>
+                                ${appeal.status === 'pending' ? 
+                                    `<button class="btn btn-primary" onclick="showAppealModal(${appeal.id})">处理</button>` : 
+                                    '已处理'
+                                }
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('加载申诉记录失败:', error);
+            }
+        }
+
+        // 显示添加路线模态框
+        function showAddRouteModal() {
+            document.getElementById('routeModalTitle').textContent = '添加班车路线';
+            document.getElementById('routeForm').reset();
+            document.getElementById('routeId').value = '';
+            document.getElementById('isActive').checked = true;
+            document.getElementById('routeModal').style.display = 'block';
+        }
+
+        // 编辑路线
+        async function editRoute(routeId) {
+            try {
+                const response = await fetch('/api/admin/routes', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const routes = await response.json();
+                const route = routes.find(r => r.id === routeId);
+                
+                if (route) {
+                    document.getElementById('routeModalTitle').textContent = '编辑班车路线';
+                    document.getElementById('routeId').value = route.id;
+                    document.getElementById('routeName').value = route.name;
+                    document.getElementById('departureLocation').value = route.departure_location;
+                    document.getElementById('arrivalLocation').value = route.arrival_location;
+                    document.getElementById('departureTime').value = route.departure_time;
+                    document.getElementById('capacity').value = route.capacity;
+                    document.getElementById('isActive').checked = route.is_active;
+                    
+                    // 设置运行日期
+                    const days = route.days_of_week.split(',');
+                    document.querySelectorAll('[id^="day"]').forEach(checkbox => {
+                        checkbox.checked = days.includes(checkbox.value);
+                    });
+                    
+                    document.getElementById('routeModal').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('加载路线信息失败:', error);
+            }
+        }
+
+        // 保存路线
+        async function saveRoute() {
+            const routeId = document.getElementById('routeId').value;
+            const formData = {
+                name: document.getElementById('routeName').value,
+                departure_location: document.getElementById('departureLocation').value,
+                arrival_location: document.getElementById('arrivalLocation').value,
+                departure_time: document.getElementById('departureTime').value,
+                capacity: parseInt(document.getElementById('capacity').value),
+                is_active: document.getElementById('isActive').checked ? 1 : 0,
+                days_of_week: Array.from(document.querySelectorAll('[id^="day"]:checked')).map(cb => cb.value).join(',')
+            };
+            
+            try {
+                const url = routeId ? `/api/admin/routes/${routeId}` : '/api/admin/routes';
+                const method = routeId ? 'PUT' : 'POST';
+                
+                const response = await fetch(url, {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert(routeId ? '路线更新成功' : '路线添加成功');
+                    closeModal('routeModal');
+                    loadRoutes();
+                } else {
+                    alert(result.error);
+                }
+            } catch (error) {
+                alert('保存失败，请重试');
+            }
+        }
+
+        // 显示申诉处理模态框
+        async function showAppealModal(appealId) {
+            try {
+                const response = await fetch('/api/admin/appeals', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const appeals = await response.json();
+                const appeal = appeals.find(a => a.id === appealId);
+                
+                if (appeal) {
+                    currentAppealId = appealId;
+                    document.getElementById('appealDetails').innerHTML = `
+                        <div class="form-group">
+                            <label>申诉用户</label>
+                            <p>${appeal.real_name} (${appeal.student_id})</p>
+                        </div>
+                        <div class="form-group">
+                            <label>申诉理由</label>
+                            <p>${appeal.reason}</p>
+                        </div>
+                        <div class="form-group">
+                            <label>提交时间</label>
+                            <p>${new Date(appeal.created_at).toLocaleString()}</p>
+                        </div>
+                    `;
+                    document.getElementById('adminResponse').value = '';
+                    document.getElementById('appealModal').style.display = 'block';
+                }
+            } catch (error) {
+                console.error('加载申诉信息失败:', error);
+            }
+        }
+
+        // 处理申诉
+        async function processAppeal(status) {
+            const adminResponse = document.getElementById('adminResponse').value.trim();
+            if (!adminResponse) {
+                alert('请填写处理意见');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/admin/appeals/${currentAppealId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        status,
+                        admin_response: adminResponse
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert('申诉处理完成');
+                    closeModal('appealModal');
+                    loadAppeals();
+                    loadDashboard(); // 更新统计数据
+                } else {
+                    alert(result.error);
+                }
+            } catch (error) {
+                alert('处理失败，请重试');
+            }
+        }
+
+        // 关闭模态框
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = 'none';
+        }
+
+        // 点击模态框外部关闭
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = 'none';
+            }
+        }
+
+        // 切换侧边栏显示（移动端）
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            const overlay = document.querySelector('.sidebar-overlay');
+            
+            if (sidebar.classList.contains('show')) {
+                sidebar.classList.remove('show');
+                overlay.style.display = 'none';
+            } else {
+                sidebar.classList.add('show');
+                overlay.style.display = 'block';
+            }
+        }
+
+        // 点击导航项时自动关闭侧边栏（移动端）
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', function() {
+                if (window.innerWidth <= 768) {
+                    const sidebar = document.querySelector('.sidebar');
+                    const overlay = document.querySelector('.sidebar-overlay');
+                    sidebar.classList.remove('show');
+                    overlay.style.display = 'none';
+                }
+            });
+        });
+
+        // 退出登录
+        function logout() {
+            localStorage.removeItem('adminToken');
+            token = null;
+            document.getElementById('mainApp').classList.add('hidden');
+            document.getElementById('loginForm').classList.remove('hidden');
+            document.getElementById('loginFormElement').reset();
+        }
+    </script>
+</body>
+</html>

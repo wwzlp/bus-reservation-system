@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>班车预约系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            background: white;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header h1 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .user-info {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 14px;
+        }
+
+        .logout-btn {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .tab-bar {
+            display: flex;
+            background: white;
+            border-bottom: 1px solid #eee;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            color: #666;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .content {
+            padding: 20px;
+        }
+
+        .date-selector {
+            margin-bottom: 20px;
+        }
+
+        .date-selector input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .route-card {
+            background: white;
+            border: 1px solid #eee;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .route-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .route-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .route-time {
+            font-size: 24px;
+            font-weight: 700;
+            color: #667eea;
+        }
+
+        .route-path {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .route-arrow {
+            margin: 0 10px;
+            color: #667eea;
+        }
+
+        .seat-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .seat-count {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .available-seats {
+            color: #52c41a;
+            font-weight: 600;
+        }
+
+        .trip-options {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .trip-option {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .trip-option.selected {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .seat-selector {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .seat-input {
+            width: 60px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .reserve-btn {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .reserve-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .reservation-card {
+            background: white;
+            border: 1px solid #eee;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .reservation-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transform: translateY(-2px);
+        }
+
+        .qr-code-container {
+            text-align: center;
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .qr-code {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 15px;
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .reservation-status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-active {
+            background: #e6f7ff;
+            color: #1890ff;
+        }
+
+        .status-cancelled {
+            background: #fff2e8;
+            color: #fa8c16;
+        }
+
+        .status-completed {
+            background: #f6ffed;
+            color: #52c41a;
+        }
+
+        .boarding-code {
+            background: #f0f2f5;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 15px 0;
+        }
+
+        .boarding-code-text {
+            font-size: 24px;
+            font-weight: 700;
+            color: #667eea;
+            letter-spacing: 2px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .btn-confirm {
+            background: #52c41a;
+            color: white;
+        }
+
+        .btn-cancel {
+            background: #ff4d4f;
+            color: white;
+        }
+
+        .login-form {
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 30px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 12px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 15px;
+        }
+
+        .link-btn {
+            width: 100%;
+            padding: 12px;
+            background: transparent;
+            color: #667eea;
+            border: 1px solid #667eea;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .alert {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+
+        .alert-success {
+            background: #f6ffed;
+            color: #52c41a;
+            border: 1px solid #b7eb8f;
+        }
+
+        .alert-error {
+            background: #fff2f0;
+            color: #ff4d4f;
+            border: 1px solid #ffccc7;
+        }
+
+        .warning-text {
+            font-size: 12px;
+            color: #fa8c16;
+            margin-top: 10px;
+            line-height: 1.4;
+        }
+
+        .appeal-section {
+            margin-top: 20px;
+            padding: 20px;
+            background: #fff7e6;
+            border-radius: 8px;
+            border: 1px solid #ffd591;
+        }
+
+        .appeal-section h3 {
+            color: #fa8c16;
+            margin-bottom: 15px;
+        }
+
+        .appeal-textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            resize: vertical;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 登录表单 -->
+        <div id="loginForm" class="login-form">
+            <h2 style="text-align: center; margin-bottom: 30px; color: #667eea;">班车预约系统</h2>
+            <div id="loginAlert"></div>
+            <form id="loginFormElement">
+                <div class="form-group">
+                    <label for="username">用户名</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">密码</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <button type="submit" class="submit-btn">登录</button>
+                <button type="button" class="link-btn" onclick="showRegisterForm()">注册新账户</button>
+            </form>
+        </div>
+
+        <!-- 注册表单 -->
+        <div id="registerForm" class="login-form hidden">
+            <h2 style="text-align: center; margin-bottom: 30px; color: #667eea;">用户注册</h2>
+            <div id="registerAlert"></div>
+            <form id="registerFormElement">
+                <div class="form-group">
+                    <label for="regUsername">用户名</label>
+                    <input type="text" id="regUsername" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="regPassword">密码</label>
+                    <input type="password" id="regPassword" name="password" required>
+                </div>
+                <div class="form-group">
+                    <label for="realName">真实姓名</label>
+                    <input type="text" id="realName" name="real_name" required>
+                </div>
+                <div class="form-group">
+                    <label for="studentId">学号</label>
+                    <input type="text" id="studentId" name="student_id" required>
+                </div>
+                <div class="form-group">
+                    <label for="phone">手机号</label>
+                    <input type="tel" id="phone" name="phone">
+                </div>
+                <div class="form-group">
+                    <label for="email">邮箱</label>
+                    <input type="email" id="email" name="email">
+                </div>
+                <button type="submit" class="submit-btn">注册</button>
+                <button type="button" class="link-btn" onclick="showLoginForm()">返回登录</button>
+            </form>
+        </div>
+
+        <!-- 主应用 -->
+        <div id="mainApp" class="hidden">
+            <div class="header">
+                <h1>班车预约</h1>
+                <div class="user-info">
+                    <span id="userWelcome"></span>
+                    <button class="logout-btn" onclick="logout()">退出</button>
+                </div>
+            </div>
+
+            <div class="tab-bar">
+                <button class="tab active" onclick="switchTab('schedule')">车次查询</button>
+                <button class="tab" onclick="switchTab('reservations')">我的预约</button>
+            </div>
+
+            <!-- 车次查询页面 -->
+            <div id="scheduleTab" class="content">
+                <div class="date-selector">
+                    <input type="date" id="selectedDate" onchange="loadRoutes()">
+                </div>
+                <div id="routesList"></div>
+            </div>
+
+            <!-- 我的预约页面 -->
+            <div id="reservationsTab" class="content hidden">
+                <div id="reservationsList"></div>
+                <div id="appealSection" class="appeal-section hidden">
+                    <h3>申请恢复预约资格</h3>
+                    <p>您的账户已被禁用，请填写申诉理由：</p>
+                    <textarea id="appealReason" class="appeal-textarea" placeholder="请详细说明情况..."></textarea>
+                    <button class="submit-btn" onclick="submitAppeal()">提交申诉</button>
+                </div>
+            </div>
+
+            <!-- 预约详情页面 -->
+            <div id="reservationDetailTab" class="content hidden">
+                <div style="display: flex; align-items: center; margin-bottom: 20px;">
+                    <button onclick="backToReservations()" style="background: none; border: none; font-size: 18px; cursor: pointer; color: #667eea;">← 返回</button>
+                    <h2 style="margin-left: 15px; color: #333;">预约详情</h2>
+                </div>
+                <div id="reservationDetail"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let token = localStorage.getItem('token');
+        let selectedRouteData = {};
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            if (token) {
+                checkTokenAndLoadApp();
+            }
+            
+            // 设置默认日期为今天
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('selectedDate').value = today;
+        });
+
+        // 检查token并加载应用
+        async function checkTokenAndLoadApp() {
+            try {
+                const response = await fetch('/api/my-reservations', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    showMainApp();
+                    loadRoutes();
+                    loadMyReservations();
+                } else {
+                    localStorage.removeItem('token');
+                    token = null;
+                }
+            } catch (error) {
+                localStorage.removeItem('token');
+                token = null;
+            }
+        }
+
+        // 显示主应用
+        function showMainApp() {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('registerForm').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            
+            // 解析token获取用户信息
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            document.getElementById('userWelcome').textContent = payload.username;
+        }
+
+        // 显示登录表单
+        function showLoginForm() {
+            document.getElementById('registerForm').classList.add('hidden');
+            document.getElementById('loginForm').classList.remove('hidden');
+        }
+
+        // 显示注册表单
+        function showRegisterForm() {
+            document.getElementById('loginForm').classList.add('hidden');
+            document.getElementById('registerForm').classList.remove('hidden');
+        }
+
+        // 登录
+        document.getElementById('loginFormElement').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    token = result.token;
+                    localStorage.setItem('token', token);
+                    showAlert('loginAlert', '登录成功', 'success');
+                    setTimeout(() => {
+                        showMainApp();
+                        loadRoutes();
+                        loadMyReservations();
+                    }, 1000);
+                } else {
+                    showAlert('loginAlert', result.error, 'error');
+                }
+            } catch (error) {
+                showAlert('loginAlert', '登录失败，请重试', 'error');
+            }
+        });
+
+        // 注册
+        document.getElementById('registerFormElement').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            
+            try {
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showAlert('registerAlert', '注册成功，请登录', 'success');
+                    setTimeout(() => {
+                        showLoginForm();
+                    }, 1500);
+                } else {
+                    showAlert('registerAlert', result.error, 'error');
+                }
+            } catch (error) {
+                showAlert('registerAlert', '注册失败，请重试', 'error');
+            }
+        });
+
+        // 显示提示信息
+        function showAlert(containerId, message, type) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 5000);
+        }
+
+        // 切换标签页
+        function switchTab(tabName) {
+            // 更新标签按钮状态
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            
+            // 如果是通过事件触发的，更新按钮状态
+            if (event && event.target) {
+                event.target.classList.add('active');
+            } else {
+                // 如果是程序调用，找到对应的标签按钮
+                const tabs = document.querySelectorAll('.tab');
+                if (tabName === 'reservations') {
+                    tabs[1].classList.add('active');
+                } else {
+                    tabs[0].classList.add('active');
+                }
+            }
+            
+            // 显示对应内容
+            document.getElementById('scheduleTab').classList.toggle('hidden', tabName !== 'schedule');
+            document.getElementById('reservationsTab').classList.toggle('hidden', tabName !== 'reservations');
+            
+            if (tabName === 'reservations') {
+                loadMyReservations();
+            }
+        }
+
+        // 加载班车路线
+        async function loadRoutes() {
+            const selectedDate = document.getElementById('selectedDate').value;
+            if (!selectedDate) return;
+            
+            try {
+                const response = await fetch(`/api/routes/${selectedDate}`);
+                const routes = await response.json();
+                
+                const routesList = document.getElementById('routesList');
+                
+                if (routes.length === 0) {
+                    routesList.innerHTML = '<p style="text-align: center; color: #666; margin-top: 50px;">当天没有班车安排</p>';
+                    return;
+                }
+                
+                routesList.innerHTML = routes.map(route => {
+                    const timeCheck = checkReservationTimeLimit(selectedDate, route.departure_time);
+                    const canReserve = timeCheck.canReserve && route.available_seats > 0;
+                    
+                    let buttonText = '立即预约';
+                    let buttonDisabled = false;
+                    let reasonText = '';
+                    
+                    if (!timeCheck.canReserve) {
+                        buttonText = '不可预约';
+                        buttonDisabled = true;
+                        reasonText = timeCheck.reason;
+                    } else if (route.available_seats === 0) {
+                        buttonText = '座位已满';
+                        buttonDisabled = true;
+                        reasonText = '当前班次座位已满';
+                    }
+                    
+                    return `
+                        <div class="route-card">
+                            <div class="route-header">
+                                <div class="route-name">${route.name}</div>
+                                <div class="route-time">${route.departure_time}</div>
+                            </div>
+                            <div class="route-path">
+                                <span>${route.departure_location}</span>
+                                <span class="route-arrow">→</span>
+                                <span>${route.arrival_location}</span>
+                            </div>
+                            <div class="seat-info">
+                                <span class="seat-count">总座位: ${route.capacity}座</span>
+                                <span class="available-seats">剩余: ${route.available_seats}座</span>
+                            </div>
+                            ${canReserve ? `
+                                <div class="trip-options">
+                                    <div class="trip-option" onclick="selectTripType(${route.id}, 'outbound', this)">去程</div>
+                                    <div class="trip-option" onclick="selectTripType(${route.id}, 'return', this)">回程</div>
+                                    <div class="trip-option" onclick="selectTripType(${route.id}, 'round_trip', this)">往返</div>
+                                </div>
+                                <div class="seat-selector">
+                                    <label>预约座位数:</label>
+                                    <input type="number" class="seat-input" id="seatCount_${route.id}" value="1" min="1" max="${route.available_seats}">
+                                </div>
+                            ` : ''}
+                            <button class="reserve-btn" onclick="makeReservation(${route.id})" ${buttonDisabled ? 'disabled' : ''}>
+                                ${buttonText}
+                            </button>
+                            ${reasonText ? `<div class="warning-text" style="color: #ff4d4f; font-weight: 600;">${reasonText}</div>` : ''}
+                            <div class="warning-text">
+                                预约成功后，请凭乘车码乘车。上车后30分钟内务必点击"确认上车"，否则将被视为违约。违约3次或取消预约6次将被禁用账户。
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('加载路线失败:', error);
+            }
+        }
+
+        // 选择行程类型
+        function selectTripType(routeId, tripType, element) {
+            // 清除同一路线的其他选择
+            const card = element.closest('.route-card');
+            card.querySelectorAll('.trip-option').forEach(option => option.classList.remove('selected'));
+            
+            // 选中当前选项
+            element.classList.add('selected');
+            
+            // 保存选择
+            selectedRouteData[routeId] = tripType;
+        }
+
+        // 检查预约时间限制
+        function checkReservationTimeLimit(reservationDate, departureTime) {
+            const now = new Date();
+            const reservationDateTime = new Date(`${reservationDate} ${departureTime}`);
+            const hoursUntilDeparture = (reservationDateTime - now) / (1000 * 60 * 60);
+            
+            if (hoursUntilDeparture < 0) {
+                return { canReserve: false, reason: '班车已发车' };
+            }
+            
+            if (hoursUntilDeparture > 72) {
+                return { canReserve: false, reason: '仅可在发车前72小时内预约' };
+            }
+            
+            return { canReserve: true, reason: '' };
+        }
+
+        // 预约班车
+        async function makeReservation(routeId) {
+            const tripType = selectedRouteData[routeId];
+            if (!tripType) {
+                alert('请选择行程类型（去程/回程/往返）');
+                return;
+            }
+            
+            const seatCount = parseInt(document.getElementById(`seatCount_${routeId}`).value);
+            const reservationDate = document.getElementById('selectedDate').value;
+            
+            try {
+                const response = await fetch('/api/reservations', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        route_id: routeId,
+                        reservation_date: reservationDate,
+                        trip_type: tripType,
+                        seat_count: seatCount
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert(`预约成功！\n乘车码: ${result.boarding_code}\n请凭此码乘车`);
+                    // 预约成功后跳转到我的预约页面
+                    switchTab('reservations');
+                    loadMyReservations();
+                } else {
+                    alert(result.error);
+                }
+            } catch (error) {
+                alert('预约失败，请重试');
+            }
+        }
+
+        // 加载我的预约
+        async function loadMyReservations() {
+            try {
+                const response = await fetch('/api/my-reservations', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.status === 403) {
+                    // 账户被禁用
+                    document.getElementById('appealSection').classList.remove('hidden');
+                    document.getElementById('reservationsList').innerHTML = '<p style="text-align: center; color: #ff4d4f; margin-top: 50px;">您的账户已被禁用，请提交申诉</p>';
+                    return;
+                }
+                
+                const reservations = await response.json();
+                
+                const reservationsList = document.getElementById('reservationsList');
+                
+                if (reservations.length === 0) {
+                    reservationsList.innerHTML = '<p style="text-align: center; color: #666; margin-top: 50px;">暂无预约记录</p>';
+                    return;
+                }
+                
+                reservationsList.innerHTML = reservations.map(reservation => {
+                    const statusClass = {
+                        'active': 'status-active',
+                        'cancelled': 'status-cancelled',
+                        'completed': 'status-completed'
+                    }[reservation.status] || 'status-active';
+                    
+                    const statusText = {
+                        'active': '有效',
+                        'cancelled': '已取消',
+                        'completed': '已完成'
+                    }[reservation.status] || '有效';
+                    
+                    const canCancel = reservation.status === 'active' && new Date(`${reservation.reservation_date} ${reservation.departure_time}`) > new Date();
+                    const canConfirm = reservation.status === 'active' && !reservation.is_confirmed;
+                    
+                    return `
+                        <div class="reservation-card" onclick="showReservationDetail(${reservation.id})">
+                            <div class="route-header">
+                                <div class="route-name">${reservation.route_name}</div>
+                                <span class="reservation-status ${statusClass}">${statusText}</span>
+                            </div>
+                            <div class="route-path">
+                                <span>${reservation.departure_location}</span>
+                                <span class="route-arrow">→</span>
+                                <span>${reservation.arrival_location}</span>
+                            </div>
+                            <p><strong>出发时间:</strong> ${reservation.reservation_date} ${reservation.departure_time}</p>
+                            <p><strong>行程类型:</strong> ${{
+                                'outbound': '去程',
+                                'return': '回程',
+                                'round_trip': '往返'
+                            }[reservation.trip_type]}</p>
+                            <p><strong>座位数:</strong> ${reservation.seat_count}座</p>
+                            ${reservation.boarding_code && reservation.status === 'active' ? `
+                                <div class="boarding-code">
+                                    <div>乘车码</div>
+                                    <div class="boarding-code-text">${reservation.boarding_code}</div>
+                                </div>
+                            ` : ''}
+                            ${(canCancel || canConfirm) ? `
+                                <div class="action-buttons">
+                                    ${canConfirm ? `<button class="btn btn-confirm" onclick="confirmBoarding(${reservation.id})">确认上车</button>` : ''}
+                                    ${canCancel ? `<button class="btn btn-cancel" onclick="cancelReservation(${reservation.id})">取消预约</button>` : ''}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('加载预约记录失败:', error);
+            }
+        }
+
+        // 确认上车
+        async function confirmBoarding(reservationId) {
+            try {
+                const response = await fetch(`/api/reservations/${reservationId}/confirm`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert('确认上车成功');
+                    loadMyReservations();
+                } else {
+                    alert(result.error);
+                }
+            } catch (error) {
+                alert('确认失败，请重试');
+            }
+        }
+
+        // 取消预约
+        async function cancelReservation(reservationId) {
+            if (!confirm('确定要取消这个预约吗？')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/reservations/${reservationId}/cancel`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert(result.message);
+                    loadMyReservations();
+                    if (result.message.includes('账户已被禁用')) {
+                        document.getElementById('appealSection').classList.remove('hidden');
+                    }
+                } else {
+                    alert(result.error);
+                }
+            } catch (error) {
+                alert('取消失败，请重试');
+            }
+        }
+
+        // 提交申诉
+        async function submitAppeal() {
+            const reason = document.getElementById('appealReason').value.trim();
+            if (!reason) {
+                alert('请填写申诉理由');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/appeals', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ reason })
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    alert('申诉已提交，请等待管理员审核');
+                    document.getElementById('appealReason').value = '';
+                } else {
+                    alert(result.error);
+                }
+            } catch (error) {
+                alert('提交失败，请重试');
+            }
+        }
+
+        // 显示预约详情
+        async function showReservationDetail(reservationId) {
+            try {
+                const response = await fetch('/api/my-reservations', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const reservations = await response.json();
+                const reservation = reservations.find(r => r.id === reservationId);
+                
+                if (!reservation) {
+                    alert('预约记录不存在');
+                    return;
+                }
+                
+                const statusClass = {
+                    'active': 'status-active',
+                    'cancelled': 'status-cancelled',
+                    'completed': 'status-completed'
+                }[reservation.status] || 'status-active';
+                
+                const statusText = {
+                    'active': '有效',
+                    'cancelled': '已取消',
+                    'completed': '已完成'
+                }[reservation.status] || '有效';
+                
+                const canCancel = reservation.status === 'active' && new Date(`${reservation.reservation_date} ${reservation.departure_time}`) > new Date();
+                const canConfirm = reservation.status === 'active' && !reservation.is_confirmed;
+                
+                document.getElementById('reservationDetail').innerHTML = `
+                    <div class="reservation-card" style="cursor: default;">
+                        <div class="route-header">
+                            <div class="route-name">${reservation.route_name}</div>
+                            <span class="reservation-status ${statusClass}">${statusText}</span>
+                        </div>
+                        <div class="route-path">
+                            <span>${reservation.departure_location}</span>
+                            <span class="route-arrow">→</span>
+                            <span>${reservation.arrival_location}</span>
+                        </div>
+                        <p><strong>出发时间:</strong> ${reservation.reservation_date} ${reservation.departure_time}</p>
+                        <p><strong>行程类型:</strong> ${{
+                            'outbound': '去程',
+                            'return': '回程',
+                            'round_trip': '往返'
+                        }[reservation.trip_type]}</p>
+                        <p><strong>座位数:</strong> ${reservation.seat_count}座</p>
+                        <p><strong>预约时间:</strong> ${new Date(reservation.created_at).toLocaleString()}</p>
+                        
+                        ${reservation.boarding_code && reservation.status === 'active' ? `
+                            <div class="qr-code-container">
+                                <h3 style="margin-bottom: 15px; color: #333;">乘车码</h3>
+                                <div class="qr-code">
+                                    二维码占位符<br>
+                                    (实际项目中可集成二维码库)
+                                </div>
+                                <div class="boarding-code">
+                                    <div class="boarding-code-text">${reservation.boarding_code}</div>
+                                </div>
+                                <p style="font-size: 14px; color: #666; margin-top: 10px;">
+                                    请向司机出示此乘车码上车
+                                </p>
+                            </div>
+                        ` : ''}
+                        
+                        ${(canCancel || canConfirm) ? `
+                            <div class="action-buttons">
+                                ${canConfirm ? `<button class="btn btn-confirm" onclick="confirmBoarding(${reservation.id}); event.stopPropagation();">确认上车</button>` : ''}
+                                ${canCancel ? `<button class="btn btn-cancel" onclick="cancelReservation(${reservation.id}); event.stopPropagation();">取消预约</button>` : ''}
+                            </div>
+                        ` : ''}
+                        
+                        <div class="warning-text">
+                            <strong>重要提醒：</strong><br>
+                            1. 请在发车前到达指定地点候车<br>
+                            2. 上车后30分钟内务必点击"确认上车"<br>
+                            3. 违约3次或取消预约6次将被禁用账户<br>
+                            4. 如有问题请及时联系管理员
+                        </div>
+                    </div>
+                `;
+                
+                // 隐藏其他页面，显示详情页面
+                document.getElementById('scheduleTab').classList.add('hidden');
+                document.getElementById('reservationsTab').classList.add('hidden');
+                document.getElementById('reservationDetailTab').classList.remove('hidden');
+                
+            } catch (error) {
+                console.error('加载预约详情失败:', error);
+                alert('加载预约详情失败，请重试');
+            }
+        }
+        
+        // 返回预约列表
+        function backToReservations() {
+            document.getElementById('reservationDetailTab').classList.add('hidden');
+            document.getElementById('reservationsTab').classList.remove('hidden');
+            
+            // 更新标签状态
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab')[1].classList.add('active');
+        }
+
+        // 退出登录
+        function logout() {
+            localStorage.removeItem('token');
+            token = null;
+            document.getElementById('mainApp').classList.add('hidden');
+            document.getElementById('loginForm').classList.remove('hidden');
+            document.getElementById('loginFormElement').reset();
+        }
+    </script>
+</body>
+</html>

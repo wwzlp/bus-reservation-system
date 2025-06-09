@@ -1856,7 +1856,7 @@
                 tbody.innerHTML = violations.map(violation => {
                     const violationTypeText = {
                         'cancel': '取消预约',
-                        'no_show': '未确认上车'
+                        'no_confirm': '未确认上车'
                     }[violation.violation_type];
                     
                     return `
